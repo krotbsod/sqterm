@@ -3,4 +3,5 @@
 .cache
 .vscode
 build/
+buildlog.txt
 CMakeUserPresets.json
