@@ -1,0 +1,151 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 16,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "default",
+      "displayName": "Default Config",
+      "description": "Default build configuration using system Qt",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "20",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "BUILD_EXAMPLE": "ON"
+      }
+    },
+    {
+      "name": "qt-linux",
+      "displayName": "Qt 5 (Linux)",
+      "description": "❗ EDIT THIS or use CMakeUserPresets.json",
+      "inherits": "default",
+      "cacheVariables": {
+        "CMAKE_PREFIX_PATH": "<SET_YOUR_QT_PATH_HERE>"
+      }
+    },
+    {
+      "name": "qt-linux-release",
+      "displayName": "Qt 5 Release (Linux)",
+      "description": "Release build with Qt 5",
+      "inherits": "qt-linux",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "qt-linux-debug",
+      "displayName": "Qt 5 Debug (Linux)",
+      "description": "Debug build with Qt 5",
+      "inherits": "qt-linux",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "qt-windows",
+      "displayName": "Qt 5 (Windows)",
+      "description": "❗ EDIT THIS or use CMakeUserPresets.json",
+      "inherits": "default",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "cacheVariables": {
+        "CMAKE_PREFIX_PATH": "<SET_YOUR_QT_PATH_HERE>"
+      }
+    },
+    {
+      "name": "qt-windows-release",
+      "displayName": "Qt 5 Release (Windows)",
+      "description": "Release build with Qt 5 on Windows",
+      "inherits": "qt-windows",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "qt-windows-debug",
+      "displayName": "Qt 5 Debug (Windows)",
+      "description": "Debug build with Qt 5 on Windows",
+      "inherits": "qt-windows",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "qt-macos",
+      "displayName": "Qt 5 (macOS)",
+      "description": "Build with Qt 5 on macOS",
+      "inherits": "default",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Darwin"
+      },
+      "cacheVariables": {
+        "CMAKE_PREFIX_PATH": "/usr/local/opt/qt@5"
+      }
+    },
+    {
+      "name": "system-qt",
+      "displayName": "System Qt (Linux)",
+      "description": "Build with system Qt (e.g., from package manager)",
+      "inherits": "default",
+      "cacheVariables": {
+        "CMAKE_PREFIX_PATH": ""
+      }
+    },
+    {
+      "name": "clang-tools",
+      "displayName": "Clang Tools (LLVM)",
+      "description": "Build with Clang compiler from custom path",
+      "inherits": "qt-linux",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "/usr/bin/clang",
+        "CMAKE_CXX_COMPILER": "/usr/bin/clang++"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "default",
+      "configurePreset": "default",
+      "jobs": 0,
+      "targets": ["all"]
+    },
+    {
+      "name": "qt-linux",
+      "configurePreset": "qt-linux",
+      "jobs": 0,
+      "targets": ["all"]
+    },
+    {
+      "name": "qt-linux-release",
+      "configurePreset": "qt-linux-release",
+      "jobs": 0,
+      "targets": ["all"]
+    },
+    {
+      "name": "qt-linux-debug",
+      "configurePreset": "qt-linux-debug",
+      "jobs": 0,
+      "targets": ["all"]
+    },
+    {
+      "name": "example",
+      "configurePreset": "qt-linux",
+      "jobs": 0,
+      "targets": ["sqterm_app"]
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "default",
+      "configurePreset": "default"
+    }
+  ]
+}

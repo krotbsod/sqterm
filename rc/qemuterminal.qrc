@@ -1,0 +1,15 @@
+<RCC>
+    <qresource prefix="/">
+        <file>icons/Graphicrating-Koloria-Error.ico</file>
+        <file>icons/Graphicrating-Koloria-Gear.ico</file>
+        <file>icons/Graphicrating-Koloria-Trash.ico</file>
+        <file>icons/Graphicrating-Koloria-Valid.ico</file>
+        <file>icons/Alecive-Flatwoken-Apps-Printer.ico</file>
+        <file>icons/Alecive-Flatwoken-Apps-Terminal.ico</file>
+        <file>icons/Graphicrating-Koloria-Error-Symbol.ico</file>
+        <file>icons/Alecive-Flatwoken-Apps-Bluetooth-Active.ico</file>
+        <file>icons/Alecive-Flatwoken-Apps-Drive-Harddisk-Usb.ico</file>
+        <file>icons/cf_icon_usb1_white.svg</file>
+        <file>icons/cf_icon_usb2_white.svg</file>
+    </qresource>
+</RCC>

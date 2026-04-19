@@ -1,0 +1,16 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "qt-linux-user",
+      "displayName": "User Qt 5 (Linux)",
+      "description": "Build with Qt 5",
+      "inherits": "default",
+      "cacheVariables": {
+        "CMAKE_PREFIX_PATH": "<SET_YOUR_QT_PATH_HERE>",
+        "CMAKE_C_COMPILER": "/usr/bin/clang",
+        "CMAKE_CXX_COMPILER": "/usr/bin/clang++"
+      }
+    }
+  ]
+}

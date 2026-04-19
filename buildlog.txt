@@ -1,0 +1,8 @@
+DBG default: Program is started
+DBG default: Searching for ports
+DBG default: Port succesfully opened: "ttyUSB0" on: "115200"
+DBG default: "0d0a5b726f6f7440617374726120726f6f745d2320"
+CRT default: "Device is already open"
+DBG default: Port succesfully closed
+DBG default: Program is stopped
+DBG default: Port is not open

@@ -1,0 +1,6 @@
+.svn
+.git
+.cache
+.vscode
+build/
+CMakeUserPresets.json
