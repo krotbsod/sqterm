@@ -6,7 +6,8 @@
 
 #pragma once
 
-#include "cli_wgt.h"
+#include "cli_widget.h"
+#include "settings.h"
 
 #include <QDialog>
 #include <QIntValidator>
@@ -26,8 +27,10 @@ class Terminal : public QWidget {
 
   private:
 	Ui::Terminal *m_ui;
-	QSerialPort *m_port;
-	cli_wgt *m_cli;
+
+	QSerialPort *m_serial;
+	Settings *m_settings;
+	CliWidget *m_cli;
 
 	void vPortSetup();
 	bool bPortOpen();
@@ -36,10 +39,13 @@ class Terminal : public QWidget {
 
 	QStringList listPortInfo;
   private slots:
-	void vOnNewSerialData();
+	void readData();
+	void writeData(const char *data, size_t size);
 
-	void on_btnConnect_clicked();
-	void on_btnSave_clicked();
-	void on_btnClear_clicked();
+	void connectSerial();
+	void save();
+	void clear();
+	void showSettings();
+
 	void on_cbPort_activated(int index);
 };

@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <qobjectdefs.h>
 #define OWN_SEQUENCES 0
 #if OWN_SEQUENCES
 #define SEQUENCES "\x1B[1;71H\x1B[3;9H"
@@ -13,9 +14,10 @@
 
 #include <QDebug>
 #include <QPlainTextEdit>
-#include <QSerialPort>
 #include <QTextBlock>
 #include <QTextCodec>
+
+#include "cli_parser.hpp"
 
 #define CHARACTER_SET "UTF-8"
 //"UTF-8"
@@ -38,7 +40,7 @@ enum CSI_Final {
 	SelectGraphicRendition = 'm',
 	SetScrollingRegion = 'r',
 	SetMode = 'h',
-	ResetMode = 'l'
+	ResetMode = 'l',
 };
 /** */
 
@@ -82,7 +84,14 @@ enum Mode {
 };
 
 /** PC-Style Function Keys */
-enum Func_Key { Func_Up = 'A', Func_Down = 'B', Func_Right = 'C', Func_Left = 'D', Func_Home = 'H', Func_End = 'F' };
+enum Func_Key {
+	Func_Up = 'A',
+	Func_Down = 'B',
+	Func_Right = 'C',
+	Func_Left = 'D',
+	Func_Home = 'H',
+	Func_End = 'F',
+};
 /** */
 
 class KeySequence {
@@ -164,32 +173,28 @@ class TextCursor : public QTextCursor {
 	int m_mode = NM;
 };
 
-class cli_wgt : public QPlainTextEdit {
+class CliWidget : public QPlainTextEdit {
 	Q_OBJECT
 
   public:
-	explicit cli_wgt(QWidget *parent = nullptr);
-	~cli_wgt() {
+	explicit CliWidget(QWidget *parent = nullptr);
+	~CliWidget() {
 		delete m_seq_key;
 	}
-	void setSerialPort(QSerialPort *port);
 
   public slots:
-	void receiveData(const QByteArray &array);
+	void processData(const QByteArray &array);
 
   signals:
-	void dataReceived(const QByteArray &array);
+	void eventData(const char *data, size_t size);
 
   protected:
-	virtual void keyPressEvent(QKeyEvent *e);
-	virtual void mousePressEvent(QMouseEvent *e);
-	virtual void mouseDoubleClickEvent(QMouseEvent *e);
-	virtual void contextMenuEvent(QContextMenuEvent *e);
+	virtual void keyPressEvent(QKeyEvent *e) override;
+	virtual void mousePressEvent(QMouseEvent *e) override;
+	virtual void mouseDoubleClickEvent(QMouseEvent *e) override;
+	virtual void contextMenuEvent(QContextMenuEvent *e) override;
 
   private:
-	void readData();
-	void writeData(const QByteArray &array);
-
 	bool funcCollect(const uint8_t __c, TextCursor &cursor, QTextCharFormat &charFormat);
 	std::vector<int> funcParams(const char *csiSequence);
 	void csiFuncView(QByteArray &csiSequence);
@@ -217,7 +222,8 @@ class cli_wgt : public QPlainTextEdit {
 
 	void imitRemovePositions(TextCursor &cursor);
 
-	QSerialPort *m_pPort = nullptr;
+	// QSerialPort *m_pPort = nullptr;
+	Cli::Parser _cli_parser;
 
 	/** Esc character */
 	const char m_esc = '\x1b';

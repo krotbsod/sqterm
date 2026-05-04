@@ -4,35 +4,39 @@
  * @date    14.06.2019
  */
 
-#include "cli_wgt.h"
+#include "cli_widget.h"
 
 #include <QScrollBar>
+#include <cstdint>
+#include <qdir.h>
 
-cli_wgt::cli_wgt(QWidget *parent) : QPlainTextEdit(parent), m_seq_key(new KeySequence()) {
+CliWidget::CliWidget(QWidget *parent) : QPlainTextEdit(parent), m_seq_key(new KeySequence()) {
 	m_codec = QTextCodec::codecForName(CHARACTER_SET);
 	document()->setMaximumBlockCount(2048);
+
 	QPalette p = palette();
 	p.setColor(QPalette::Base, Qt::black);
 	//    p.setColor(QPalette::Text, QColor(42,220,130));
+
 	QFont font("Monospace");
 	font.setStyleHint(QFont::TypeWriter);
 
 	setTextCursor(TextCursor(document()));
-
 	setFont(font);
 	setPalette(p);
+
+	// _cli_parser.setOnReadyCallback(OnReadyCallback f);
+	// _cli_parser.setOnEventCallback(OnEventCallback f);
 }
 
-void cli_wgt::setSerialPort(QSerialPort *port) {
-	m_pPort = port;
-	connect(m_pPort, &QSerialPort::readyRead, this, &cli_wgt::readData);
-}
-
-void cli_wgt::receiveData(const QByteArray &array) {
+void CliWidget::processData(const QByteArray &array) {
 	static QTextCharFormat charFormat;
 	static TextCursor cursor;
 	static std::string unicodebuf;
 	qDebug() << array.toHex();
+
+	// _cli_parser.parseData(array.data(), array.size());
+
 	for (int i = 0; i < array.count(); i++) {
 		cursor = textCursor();
 		uint8_t __uc = static_cast<uint8_t>(array.constData()[i]);
@@ -90,17 +94,7 @@ void cli_wgt::receiveData(const QByteArray &array) {
 	sb->setValue(sb->maximum());
 }
 
-void cli_wgt::readData() {
-#if OWN_SEQUENCES
-	QByteArray array = SEQUENCES;
-#else
-	QByteArray array = m_pPort->readAll();
-#endif
-
-	receiveData(array);
-}
-
-bool cli_wgt::funcCollect(const uint8_t __c, TextCursor &cursor, QTextCharFormat &charFormat) {
+bool CliWidget::funcCollect(const uint8_t __c, TextCursor &cursor, QTextCharFormat &charFormat) {
 
 	static std::string buf;
 	static bool escFound = false;
@@ -249,7 +243,7 @@ bool cli_wgt::funcCollect(const uint8_t __c, TextCursor &cursor, QTextCharFormat
 }
 
 // rewrite this more universaly
-std::vector<int> cli_wgt::funcParams(const char *csiSequence) {
+std::vector<int> CliWidget::funcParams(const char *csiSequence) {
 	char sep = ';';
 	std::vector<int> params;
 	if (csiSequence) {
@@ -274,7 +268,7 @@ std::vector<int> cli_wgt::funcParams(const char *csiSequence) {
 	return params;
 }
 
-void cli_wgt::csiSGR(TextCursor &cursor, QTextCharFormat &charFormat, std::vector<int> params) {
+void CliWidget::csiSGR(TextCursor &cursor, QTextCharFormat &charFormat, std::vector<int> params) {
 	auto lfDefault = [&]() -> void {
 		charFormat.clearBackground(); // or charFormat.clearBackground()
 		charFormat.clearForeground(); // or charFormat.clearForeground()
@@ -373,7 +367,7 @@ void cli_wgt::csiSGR(TextCursor &cursor, QTextCharFormat &charFormat, std::vecto
 	cursor.setCharFormat(charFormat);
 }
 
-void cli_wgt::csiCUB(TextCursor &cursor, std::vector<int> params) {
+void CliWidget::csiCUB(TextCursor &cursor, std::vector<int> params) {
 	auto lfCUB = [&]() -> void {
 		if (!cursor.atBlockStart()) {
 			cursor.movePosition(TextCursor::PreviousCharacter, TextCursor::MoveAnchor);
@@ -390,7 +384,7 @@ void cli_wgt::csiCUB(TextCursor &cursor, std::vector<int> params) {
 	}
 }
 
-void cli_wgt::csiCUD(TextCursor &cursor, std::vector<int> params) {
+void CliWidget::csiCUD(TextCursor &cursor, std::vector<int> params) {
 	auto lfCUD = [&]() -> void {
 		int oldPositionInBlock = cursor.positionInBlock();
 		bool moved = cursor.movePosition(TextCursor::NextBlock, TextCursor::MoveAnchor);
@@ -421,7 +415,7 @@ void cli_wgt::csiCUD(TextCursor &cursor, std::vector<int> params) {
 	}
 }
 
-void cli_wgt::csiCUU(TextCursor &cursor, std::vector<int> params) {
+void CliWidget::csiCUU(TextCursor &cursor, std::vector<int> params) {
 	auto lfCUU = [&]() -> void {
 		int oldPositionInBlock = cursor.positionInBlock();
 		bool moved = cursor.movePosition(TextCursor::PreviousBlock, TextCursor::MoveAnchor);
@@ -452,7 +446,7 @@ void cli_wgt::csiCUU(TextCursor &cursor, std::vector<int> params) {
 	}
 }
 
-void cli_wgt::csiCUF(TextCursor &cursor, std::vector<int> params) {
+void CliWidget::csiCUF(TextCursor &cursor, std::vector<int> params) {
 	auto lfCUF = [&]() -> void {
 		if (!cursor.atBlockEnd()) {
 			cursor.movePosition(TextCursor::NextCharacter, TextCursor::MoveAnchor);
@@ -469,7 +463,7 @@ void cli_wgt::csiCUF(TextCursor &cursor, std::vector<int> params) {
 	}
 }
 
-void cli_wgt::csiCUP(TextCursor &cursor, std::vector<int> params) {
+void CliWidget::csiCUP(TextCursor &cursor, std::vector<int> params) {
 	if (!params.empty()) {
 		cursor.movePosition(TextCursor::Start, TextCursor::MoveAnchor);
 
@@ -481,7 +475,7 @@ void cli_wgt::csiCUP(TextCursor &cursor, std::vector<int> params) {
 	}
 }
 
-void cli_wgt::csiDCH(TextCursor &cursor, std::vector<int> params) {
+void CliWidget::csiDCH(TextCursor &cursor, std::vector<int> params) {
 	if (!params.empty()) {
 		cursor.movePosition(TextCursor::NextCharacter, TextCursor::KeepAnchor, params[0]);
 		imitRemovePositions(cursor);
@@ -491,38 +485,38 @@ void cli_wgt::csiDCH(TextCursor &cursor, std::vector<int> params) {
 	}
 }
 
-void cli_wgt::csiSU(TextCursor &cursor, std::vector<int> params) {
+void CliWidget::csiSU(TextCursor &cursor, std::vector<int> params) {
 	// implement this
 }
 
-void cli_wgt::csiDECSTBM(TextCursor &cursor, std::vector<int> params) {
+void CliWidget::csiDECSTBM(TextCursor &cursor, std::vector<int> params) {
 	// implement this
 }
 
-void cli_wgt::csiSM(TextCursor &cursor, std::vector<int> params) {
+void CliWidget::csiSM(TextCursor &cursor, std::vector<int> params) {
 	if (!params.empty()) {
 		cursor.setModes(params[0]);
 	}
 }
 
-void cli_wgt::csiRM(TextCursor &cursor, std::vector<int> params) {
+void CliWidget::csiRM(TextCursor &cursor, std::vector<int> params) {
 	if (!params.empty()) {
 		cursor.resetModes(params[0]);
 	}
 }
 
-void cli_wgt::csiDECSET(std::vector<int> params) {
+void CliWidget::csiDECSET(std::vector<int> params) {
 	if (!params.empty()) {
 		m_seq_key->setModes(params[0]);
 	}
 }
-void cli_wgt::csiDECRST(std::vector<int> params) {
+void CliWidget::csiDECRST(std::vector<int> params) {
 	if (!params.empty()) {
 		m_seq_key->resetModes(params[0]);
 	}
 }
 
-void cli_wgt::csiEL(TextCursor &cursor, std::vector<int> params) {
+void CliWidget::csiEL(TextCursor &cursor, std::vector<int> params) {
 	if (!params.empty()) {
 		switch (params[0]) {
 		case 0:
@@ -545,7 +539,7 @@ void cli_wgt::csiEL(TextCursor &cursor, std::vector<int> params) {
 	}
 }
 
-void cli_wgt::csiED(TextCursor &cursor, std::vector<int> params) {
+void CliWidget::csiED(TextCursor &cursor, std::vector<int> params) {
 	if (!params.empty()) {
 		switch (params[0]) {
 		case 0:
@@ -574,11 +568,11 @@ void cli_wgt::csiED(TextCursor &cursor, std::vector<int> params) {
 	}
 }
 
-void cli_wgt::csiIL(TextCursor &cursor, std::vector<int> params) {
+void CliWidget::csiIL(TextCursor &cursor, std::vector<int> params) {
 	// implement this
 }
 
-void cli_wgt::csiDL(TextCursor &cursor, std::vector<int> params) {
+void CliWidget::csiDL(TextCursor &cursor, std::vector<int> params) {
 	auto lfDL = [&]() {
 		cursor.movePosition(TextCursor::StartOfBlock, TextCursor::MoveAnchor);
 		cursor.movePosition(TextCursor::EndOfBlock, TextCursor::KeepAnchor);
@@ -592,137 +586,39 @@ void cli_wgt::csiDL(TextCursor &cursor, std::vector<int> params) {
 	}
 }
 
-void cli_wgt::imitRemovePositions(TextCursor &cursor) {
+void CliWidget::imitRemovePositions(TextCursor &cursor) {
 	// cursor.insertText(cursor.selectedText().fill(' '));
 	cursor.removeSelectedText();
 }
 
-void cli_wgt::csiFuncView(QByteArray &csiSequence) {
+void CliWidget::csiFuncView(QByteArray &csiSequence) {
 	qDebug() << csiSequence << funcParams(csiSequence) << "\n";
 }
 
-void cli_wgt::keySequence(QByteArray &data, int key) {
-	const char *seq_key;
-	if (DECCKM & m_seq_key->modes()) {
-		seq_key = m_ss3;
-	} else {
-		seq_key = m_csi;
-	}
+void CliWidget::keyPressEvent(QKeyEvent *e) {
+	QByteArray byte_array = e->text().toLocal8Bit();
 
-	switch (key) {
-	case Qt::Key_Up:
-		data.append(seq_key);
-		data.append(Func_Up);
-		break;
-	case Qt::Key_Down:
-		data.append(seq_key);
-		data.append(Func_Down);
-		break;
-	case Qt::Key_Right:
-		data.append(seq_key);
-		data.append(Func_Right);
-		break;
-	case Qt::Key_Left:
-		data.append(seq_key);
-		data.append(Func_Left);
-		break;
-	case Qt::Key_Home:
-		data.append(seq_key);
-		data.append(Func_Home);
-		break;
-	case Qt::Key_End:
-		data.append(seq_key);
-		data.append(Func_End);
-		break;
+	std::vector<char> data(byte_array.data(), byte_array.data() + byte_array.size());;
+	_cli_parser.processEventData(data, e->key());
+	
+	eventData(data.data(), data.size());
 
-	case Qt::Key_F1:
-		data.append(m_ss3);
-		data.append('P');
-		break;
-	case Qt::Key_F2:
-		data.append(m_ss3);
-		data.append('Q');
-		break;
-	case Qt::Key_F3:
-		data.append(m_ss3);
-		data.append('R');
-		break;
-	case Qt::Key_F4:
-		data.append(m_ss3);
-		data.append('S');
-		break;
-	case Qt::Key_F5:
-		data.append(m_csi);
-		data.append("15~");
-		break;
-	case Qt::Key_F6:
-		data.append(m_csi);
-		data.append("17~");
-		break;
-	case Qt::Key_F7:
-		data.append(m_csi);
-		data.append("18~");
-		break;
-	case Qt::Key_F8:
-		data.append(m_csi);
-		data.append("19~");
-		break;
-	case Qt::Key_F9:
-		data.append(m_csi);
-		data.append("20~");
-		break;
-	case Qt::Key_F10:
-		data.append(m_csi);
-		data.append("21~");
-		break;
-	case Qt::Key_F11:
-		data.append(m_csi);
-		data.append("23~");
-		break;
-	case Qt::Key_F12:
-		data.append(m_csi);
-		data.append("24~");
-		break;
-	}
+	// QByteArray data = e->text().toLocal8Bit();
+	// keySequence(data, e->key());
+	// writeData(data);
 }
 
-void cli_wgt::writeData(const QByteArray &array) {
-	dataReceived(array);
-	try {
-#if OWN_SEQUENCES
-		readData();
-#else
-		if (m_pPort == nullptr) {
-			throw "Port is not Created";
-		}
-		if (!m_pPort->isOpen()) {
-			throw "Port is not Open";
-		}
-		m_pPort->write(array);
-#endif
-	} catch (const char *msg) {
-		qDebug() << msg;
-	}
-}
-
-void cli_wgt::keyPressEvent(QKeyEvent *e) {
-	QByteArray data = e->text().toLocal8Bit();
-
-	keySequence(data, e->key());
-	writeData(data);
-}
-
-void cli_wgt::mousePressEvent(QMouseEvent *e) {
+void CliWidget::mousePressEvent(QMouseEvent *e) {
 	Q_UNUSED(e)
 	// QPlainTextEdit::mousePressEvent(e);
 	setFocus();
 }
 
-void cli_wgt::mouseDoubleClickEvent(QMouseEvent *e) {
+void CliWidget::mouseDoubleClickEvent(QMouseEvent *e) {
 	Q_UNUSED(e)
 }
 
-void cli_wgt::contextMenuEvent(QContextMenuEvent *e) {
+void CliWidget::contextMenuEvent(QContextMenuEvent *e) {
 	Q_UNUSED(e)
 	// QPlainTextEdit::contextMenuEvent(e);
 }

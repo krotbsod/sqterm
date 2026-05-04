@@ -11,6 +11,8 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
+add_definitions(-gdwarf-4)
+
 if(NOT DEFINED CMAKE_PREFIX_PATH)
     message(STATUS "CMAKE_PREFIX_PATH not set, using system Qt")
 endif()
@@ -34,7 +36,9 @@ qt5_add_resources(RESOURCES_RC
 target_sources(${PROJECT_NAME}
     PRIVATE 
         ${HDR_FILES}
-        "src/cli_wgt.cpp"
+        "src/cli_parser.cpp"
+        "src/cli_widget.cpp"
+        "src/settings.cpp"
         "src/terminal.cpp"
     INTERFACE 
         ${RESOURCES_RC}
