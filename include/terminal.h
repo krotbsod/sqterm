@@ -30,7 +30,7 @@ class Terminal : public QWidget {
 
 	QSerialPort *m_serial;
 	Settings *m_settings;
-	CliWidget *m_cli;
+	CliWidget *m_cli_widget;
 
 	void vPortSetup();
 	bool bPortOpen();

@@ -9,33 +9,47 @@
 #include <QScrollBar>
 #include <cstdint>
 #include <qdir.h>
+#include <qglobal.h>
 
 CliWidget::CliWidget(QWidget *parent) : QPlainTextEdit(parent), m_seq_key(new KeySequence()) {
 	m_codec = QTextCodec::codecForName(CHARACTER_SET);
 	document()->setMaximumBlockCount(2048);
+
+	this->undoAvailable(false);
+    this->redoAvailable(false);
+	this->copyAvailable(true);
 
 	QPalette p = palette();
 	p.setColor(QPalette::Base, Qt::black);
 	//    p.setColor(QPalette::Text, QColor(42,220,130));
 
 	QFont font("Monospace");
-	font.setStyleHint(QFont::TypeWriter);
+	font.setStyleHint(QFont::Monospace);
+	font.setPointSize(8);
 
 	setTextCursor(TextCursor(document()));
 	setFont(font);
 	setPalette(p);
 
-	// _cli_parser.setOnReadyCallback(OnReadyCallback f);
-	// _cli_parser.setOnEventCallback(OnEventCallback f);
+	_cli_parser.setOnReadyCallback([ this ](const char *data, size_t size) {
+		qDebug() << data;
+		return 0;
+	});
+
+	_cli_parser.setOnEventCallback([ this ](const char *data, size_t size) {
+		this->eventData(data, size);
+		return 0;
+	});
 }
 
 void CliWidget::processData(const QByteArray &array) {
 	static QTextCharFormat charFormat;
 	static TextCursor cursor;
 	static std::string unicodebuf;
-	qDebug() << array.toHex();
 
-	// _cli_parser.parseData(array.data(), array.size());
+	qDebug() << array;
+
+	_cli_parser.parseData(array.data(), array.size());
 
 	for (int i = 0; i < array.count(); i++) {
 		cursor = textCursor();
@@ -94,6 +108,13 @@ void CliWidget::processData(const QByteArray &array) {
 	sb->setValue(sb->maximum());
 }
 
+void onReadySequenceCallback(const char *buf, bool *is_final = nullptr) {
+	if (is_final) {
+		*is_final = true;
+	}
+	// qDebug() << buf;
+}
+
 bool CliWidget::funcCollect(const uint8_t __c, TextCursor &cursor, QTextCharFormat &charFormat) {
 
 	static std::string buf;
@@ -101,12 +122,6 @@ bool CliWidget::funcCollect(const uint8_t __c, TextCursor &cursor, QTextCharForm
 	static bool csiFound = false;
 	static bool csiIntermediateFound = false;
 	static bool finalFound = false;
-
-	auto lfReadySequence = [&]() -> void {
-		finalFound = true;
-		QByteArray dbg(buf.c_str());
-		qDebug() << dbg;
-	};
 
 	if (finalFound) {
 		escFound = false;
@@ -133,19 +148,19 @@ bool CliWidget::funcCollect(const uint8_t __c, TextCursor &cursor, QTextCharForm
 			csiFound = true;
 			return escFound;
 		case NormalKeypad:
-			lfReadySequence();
+			onReadySequenceCallback(buf.c_str(), &finalFound);
 			//
 			break;
 		case SaveCursor:
-			lfReadySequence();
+			onReadySequenceCallback(buf.c_str(), &finalFound);
 			//
 			break;
 		case RestoreCursor:
-			lfReadySequence();
+			onReadySequenceCallback(buf.c_str(), &finalFound);
 			//
 			break;
 		case ReverseIndex:
-			lfReadySequence();
+			onReadySequenceCallback(buf.c_str(), &finalFound);
 			//
 			break;
 		}
@@ -154,64 +169,64 @@ bool CliWidget::funcCollect(const uint8_t __c, TextCursor &cursor, QTextCharForm
 		if (csiFound) {
 			switch (__c) {
 			case CursorUp:
-				lfReadySequence();
+				onReadySequenceCallback(buf.c_str(), &finalFound);
 				csiCUU(cursor, funcParams(buf.c_str()));
 				break;
 			case CursorDown:
-				lfReadySequence();
+				onReadySequenceCallback(buf.c_str(), &finalFound);
 				csiCUD(cursor, funcParams(buf.c_str()));
 				break;
 			case CursorForward:
-				lfReadySequence();
+				onReadySequenceCallback(buf.c_str(), &finalFound);
 				csiCUF(cursor, funcParams(buf.c_str()));
 				break;
 			case CursorBack:
-				lfReadySequence();
+				onReadySequenceCallback(buf.c_str(), &finalFound);
 				csiCUB(cursor, funcParams(buf.c_str()));
 				break;
 			case CursorPosition:
-				lfReadySequence();
+				onReadySequenceCallback(buf.c_str(), &finalFound);
 				csiCUP(cursor, funcParams(buf.c_str()));
 				break;
 			case DeleteCharacter:
-				lfReadySequence();
+				onReadySequenceCallback(buf.c_str(), &finalFound);
 				csiDCH(cursor, funcParams(buf.c_str()));
 				break;
 			case EraseInLine:
-				lfReadySequence();
+				onReadySequenceCallback(buf.c_str(), &finalFound);
 				csiEL(cursor, funcParams(buf.c_str()));
 				break;
 			case EraseData:
-				lfReadySequence();
+				onReadySequenceCallback(buf.c_str(), &finalFound);
 				csiED(cursor, funcParams(buf.c_str()));
 				break;
 			case InsertLine:
-				lfReadySequence();
+				onReadySequenceCallback(buf.c_str(), &finalFound);
 				csiIL(cursor, funcParams(buf.c_str()));
 				break;
 			case DeleteLine:
-				lfReadySequence();
+				onReadySequenceCallback(buf.c_str(), &finalFound);
 				csiDL(cursor, funcParams(buf.c_str()));
 				break;
 
 			case SelectGraphicRendition:
-				lfReadySequence();
+				onReadySequenceCallback(buf.c_str(), &finalFound);
 				csiSGR(cursor, charFormat, funcParams(buf.c_str()));
 				break;
 			case ScrollUplines:
-				lfReadySequence();
+				onReadySequenceCallback(buf.c_str(), &finalFound);
 				csiSU(cursor, funcParams(buf.c_str()));
 				break;
 			case SetScrollingRegion:
-				lfReadySequence();
+				onReadySequenceCallback(buf.c_str(), &finalFound);
 				csiDECSTBM(cursor, funcParams(buf.c_str()));
 				break;
 			case SetMode:
-				lfReadySequence();
+				onReadySequenceCallback(buf.c_str(), &finalFound);
 				csiSM(cursor, funcParams(buf.c_str()));
 				break;
 			case ResetMode:
-				lfReadySequence();
+				onReadySequenceCallback(buf.c_str(), &finalFound);
 				csiRM(cursor, funcParams(buf.c_str()));
 				break;
 
@@ -229,11 +244,11 @@ bool CliWidget::funcCollect(const uint8_t __c, TextCursor &cursor, QTextCharForm
 		if (csiIntermediateFound) {
 			switch (__c) {
 			case SetMode:
-				lfReadySequence();
+				onReadySequenceCallback(buf.c_str(), &finalFound);
 				csiDECSET(funcParams(buf.c_str()));
 				break;
 			case ResetMode:
-				lfReadySequence();
+				onReadySequenceCallback(buf.c_str(), &finalFound);
 				csiDECRST(funcParams(buf.c_str()));
 				break;
 			}
@@ -275,7 +290,8 @@ void CliWidget::csiSGR(TextCursor &cursor, QTextCharFormat &charFormat, std::vec
 		QFont font = charFormat.font();
 		font.setFamily("Monospace");
 		font.setWeight(QFont::Normal);
-		font.setStyleHint(QFont::TypeWriter);
+		font.setPointSize(8);
+		// font.setStyleHint(QFont::TypeWriter);
 		charFormat.setFont(font);
 	};
 
@@ -290,7 +306,8 @@ void CliWidget::csiSGR(TextCursor &cursor, QTextCharFormat &charFormat, std::vec
 				QFont font = charFormat.font();
 				font.setFamily("Monospace");
 				font.setWeight(QFont::Bold);
-				font.setStyleHint(QFont::TypeWriter);
+				// font.setStyleHint(QFont::TypeWriter);
+				font.setPointSize(8);
 				charFormat.setFont(font);
 				break;
 			}
@@ -600,12 +617,6 @@ void CliWidget::keyPressEvent(QKeyEvent *e) {
 
 	std::vector<char> data(byte_array.data(), byte_array.data() + byte_array.size());;
 	_cli_parser.processEventData(data, e->key());
-	
-	eventData(data.data(), data.size());
-
-	// QByteArray data = e->text().toLocal8Bit();
-	// keySequence(data, e->key());
-	// writeData(data);
 }
 
 void CliWidget::mousePressEvent(QMouseEvent *e) {

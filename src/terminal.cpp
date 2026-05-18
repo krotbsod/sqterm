@@ -24,7 +24,7 @@ Terminal::Terminal(QWidget *parent) : QWidget(parent), m_ui(new Ui::Terminal()) 
 	m_ui->setupUi(this);
 	m_serial = new QSerialPort(this);
 	m_settings = new Settings(this);
-	m_cli = new CliWidget(this);
+	m_cli_widget = new CliWidget(this);
 
 	qDebug() << "Program is started";
 	vPortSetup();
@@ -34,7 +34,7 @@ Terminal::Terminal(QWidget *parent) : QWidget(parent), m_ui(new Ui::Terminal()) 
 	connect(m_ui->btnClear, &QPushButton::clicked, this, &Terminal::clear);
 	connect(m_ui->btnConfig, &QPushButton::clicked, this, &Terminal::showSettings);
 
-	m_ui->vblTerminal->addWidget(m_cli);
+	m_ui->vblTerminal->addWidget(m_cli_widget);
 }
 
 Terminal::~Terminal() {
@@ -56,7 +56,7 @@ bool Terminal::bPortOpen() {
 		m_serial->setFlowControl(QSerialPort::NoFlowControl);
 
 		connect(m_serial, &QSerialPort::readyRead, this, &Terminal::readData);
-		connect(m_cli, &CliWidget::eventData, this, &Terminal::writeData);
+		connect(m_cli_widget, &CliWidget::eventData, this, &Terminal::writeData);
 
 		qDebug() << "Port succesfully opened:" << m_serial->portName() << "on:" << m_ui->cbBaudrate->currentText();
 		return true;
@@ -139,8 +139,7 @@ void Terminal::vPortSetup() {
 void Terminal::readData() {
 	// qDebug() << "Data on port";
 	if (m_serial->isOpen()) {
-		QByteArray data = m_serial->readAll();
-		m_cli->processData(data);
+		m_cli_widget->processData(m_serial->readAll());
 	}
 }
 
@@ -173,7 +172,7 @@ void Terminal::save() {
 
 		if (file.open(QIODevice::ReadWrite)) {
 			QTextStream stream(&file);
-			stream << m_cli->toPlainText();
+			stream << m_cli_widget->toPlainText();
 
 			file.flush();
 			file.close();
@@ -186,7 +185,7 @@ void Terminal::save() {
 
 void Terminal::clear() {
 	qDebug() << "Clear text";
-	m_cli->clear();
+	m_cli_widget->clear();
 }
 
 void Terminal::showSettings() {
